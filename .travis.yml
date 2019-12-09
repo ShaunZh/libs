@@ -1,0 +1,19 @@
+sudo: false
+language: node_js
+node_js:
+- '8'
+cache:
+  directories:
+  - node_modules
+branches:
+  only:
+  - master
+script: npm run test
+deploy:
+  provider: npm
+  email: 308826842@qq.com
+  api_key:
+    secure: NgcY1glt3nNHwrOiWluBQ/wneDqpI1bPJFPhKhBrSh0hwyjoomh++5onjv0Yjf+KZfUyUBLxojkmSVeUQpMAqNVDcHOi1N+lmynRv/fGuV29SnWVOOCbyivVGCd1RBaTPbalchcRZXyL0zByumi8ouYBCy3T5RuXqPiJWuiyWyDqZAPwlTKufhO0rvD5BURCbDlW+KXm38OSs57wt81Bykrf/mmNhbczwycJQP8p3h46Jjq+QXOb6rXRsLHZngEjX64TyYxQ+f27Hf2bmwtJZ3CGSvnuwpltcJBvJ3Y1mJa5XVN9fuxCQx1CPGY+3USXc2Q4/vUkIHgqekMVDQjasNRspJPJWPm2sqLaFuMAPsE85Nz9YEFMbyqBIkj9pzvxy8nKK6wgmvH1Oq2NZj7sWPLc99RCwof2V5ygj7+o/pCwNX4k6jpOfQEle0HNhVVi3GBF+xfp6snPTefNEK3Zy5bDmHTWaTNzI29QxT84OpP3wWMA2wzGKiccuJE2NUgY4zgr9CUJkjEgr34jgtiVFcqQtjKGJa7PJ9mz8iHwXPi+hDFQ+R00chC3zH8H6iVXmZEeVDFmGH6KaeWwAeXfv3A9WdFD3jK4Ng5R/EBtwKQ92DWCmTTOKUUx1H+K/RdsZlDrz7tpj1fyMMLx7yg/oGCPFwr94SfkBlyZJnRmbY0=
+  on:
+    tags: true
+    repo: ShaunZh/my-js-lib
