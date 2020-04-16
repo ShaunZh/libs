@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2019-12-13 16:36:10
  * @LastEditors: Hexon
- * @LastEditTime: 2020-04-16 14:43:26
+ * @LastEditTime: 2020-04-16 17:12:30
  */
 import locationSearch from "./locationSearch";
 declare global {
@@ -47,7 +47,9 @@ interface HttpResponseAuth extends HttpResponse {
 
 interface AuthParams {
   signature: object;
-  auth: object;
+  auth: {
+    code: string | undefined;
+  };
 }
 
 type PromiseFunc = <P>(params: P) => Promise<any>;
@@ -224,34 +226,51 @@ class SingletonWxAuth {
     authParams: AuthParams
   ): Promise<any> {
     return new Promise((resolve, reject) => {
-      if (this._wxConfig.appId) {
-        resolve();
+      // 如果appId存在以及token存在，则说明已经授权
+      if (this._wxConfig.appId && this.getAuthFromSession()) {
+        resolve({
+          status: "authed",
+        });
         return;
       }
+
       this.httpGetWxSignature(httpSignature, authParams.signature)
         .then(() => {
-          const searchObj: WxLocation = locationSearch(window.location.search);
-          if (searchObj["code"]) {
+          // const searchObj: WxLocation = locationSearch(window.location.search);
+          if (authParams.auth && authParams.auth.code) {
             httpAuth(authParams.auth)
               .then((authRes: HttpResponseAuth) => {
                 this.setAuthToSession(authRes);
                 this.wxAuthLocationReplace();
               })
               .catch((err) => {
-                reject(err);
+                // 说明授权失败
+                resolve({
+                  status: "failed",
+                  err,
+                });
               });
           } else {
             // 从session中获取授权信息
             this._isAuth = !!this.getAuthFromSession();
             if (this._isAuth) {
-              resolve();
+              resolve({
+                status: "authed",
+              });
             } else {
-              reject(new Error("no code，no auth"));
+              // 注意：在重定向到微信授权页面时，必须要先调用微信jssdk的接口以便获取微信公众号appid等信息，否则无法跳转
+              // 在调用函数中，根据实际情况进行处理，
+              // 一般情况下，如果是生产环境，那么需要重定向到微信授权页面
+              // 如果是开发环境，可以写入临时的token，并next(以vue-router为例)
+              reject(new Error("no code, no auth"));
             }
           }
         })
         .catch((err) => {
-          reject(err);
+          resolve({
+            status: "failed",
+            err,
+          });
         });
     });
   }
