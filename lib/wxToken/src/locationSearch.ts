@@ -2,7 +2,7 @@ interface GeneralObj {
   [propName: string]: string;
 }
 
-const LocationSearch = (search: string) => {
+const locationSearch = (search: string) => {
   let s = search.substring(search[0] === "?" ? 1 : 0);
   let a: Array<string> = [];
   if (s !== "") {
@@ -18,4 +18,4 @@ const LocationSearch = (search: string) => {
   return kv;
 };
 
-export default LocationSearch;
+export default locationSearch;

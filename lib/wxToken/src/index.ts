@@ -1,3 +1,11 @@
+/*
+ * @Description:
+ * @Author: Hexon
+ * @Date: 2019-12-13 16:36:10
+ * @LastEditors: Hexon
+ * @LastEditTime: 2020-04-16 14:43:26
+ */
+import locationSearch from "./locationSearch";
 declare global {
   interface Window {
     wx: any; // 添加wx声明到window对象上，否则，调用window.wx会报错
@@ -31,13 +39,18 @@ interface HttpResponse {
   message: string;
 }
 
+interface HttpResponseAuth extends HttpResponse {
+  result: {
+    Authorization: string;
+  };
+}
+
 interface AuthParams {
   signature: object;
   auth: object;
 }
 
 type PromiseFunc = <P>(params: P) => Promise<any>;
-import LocationSearch from "./LocationSearch";
 
 class SingletonWxAuth {
   private static _instance: SingletonWxAuth = new SingletonWxAuth();
@@ -50,10 +63,10 @@ class SingletonWxAuth {
   // private _isWxBroswer: Boolean = false; // 是否为微信浏览器
   private _wxConfig: WxConfig = {
     debug: false,
-    appId: undefined,
-    timestamp: undefined,
-    nonceStr: undefined,
-    signature: undefined,
+    appId: "",
+    timestamp: "",
+    nonceStr: "",
+    signature: "",
     jsApiList: [
       "chooseWXPay",
       "updateAppMessageShareData",
@@ -70,8 +83,8 @@ class SingletonWxAuth {
       "showMenuItems", //
       "hideAllNonBaseMenuItem",
       "showAllNonBaseMenuItem",
-      "closeWindow"
-    ]
+      "closeWindow",
+    ],
   }; // 通过微信sdk签名获取的微信配置
 
   private constructor() {
@@ -99,37 +112,34 @@ class SingletonWxAuth {
     this._wxConfig.debug = debug;
   }
 
-  // 微信签名配置
   public wxSignatureConfig(): Promise<any> {
     return new Promise((resolve, reject) => {
-      // TODO: 要验证此处是否需要添加在已经微信授权后才能进行jssdk签名
-      if (this._isAuth) {
-        // 是微信浏览器
-        window.wx.config({
-          debug: this._wxConfig.debug, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
-          appId: this._wxConfig.appId, // 必填，公众号的唯一标识
-          timestamp: this._wxConfig.timestamp, // 必填，生成签名的时间戳
-          nonceStr: this._wxConfig.nonceStr, // 必填，生成签名的随机串
-          signature: this._wxConfig.signature, // 必填，签名
-          // 必填，需要使用的JS接口列表
-          jsApiList: this._wxConfig.jsApiList
-        });
-        window.wx.ready(() => {
-          this._isWxsdkReady = true;
-          resolve();
-        });
-        window.wx.error((err: HttpResponse) => {
-          console.error("wx.config error");
-          reject(err);
-        });
-      } else {
+      window.wx.config({
+        debug: this._wxConfig.debug, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
+        appId: this._wxConfig.appId, // 必填，公众号的唯一标识
+        timestamp: this._wxConfig.timestamp, // 必填，生成签名的时间戳
+        nonceStr: this._wxConfig.nonceStr, // 必填，生成签名的随机串
+        signature: this._wxConfig.signature, // 必填，签名
+        // 必填，需要使用的JS接口列表
+        jsApiList: this._wxConfig.jsApiList,
+      });
+      window.wx.ready(() => {
+        this._isWxsdkReady = true;
+        this.setWxConfigToSession(this._wxConfig);
+        console.log("wx.config ok");
         resolve();
-      }
+      });
+      window.wx.error((err: HttpResponse) => {
+        console.error("wx.config error");
+        // 进行jssdk config失败 不应该阻塞微信授权，因为可能出现不需要使用jssdk的情况
+        resolve();
+      });
     });
   }
+
   // 获取微信签名
-  public httpGetWxSignature<P>(http: PromiseFunc, params: P): Promise<any> {
-    if (this._wxConfig && this._wxConfig.appId) {
+  public httpGetWxSignature<P>(http: PromiseFunc, params: P) {
+    if (this._wxConfig && this._wxConfig.appId && this._wxConfig.appId.length) {
       return Promise.resolve();
     }
     return new Promise((resolve, reject) => {
@@ -145,7 +155,7 @@ class SingletonWxAuth {
             .then(() => {
               resolve();
             })
-            .catch(err => {
+            .catch((err) => {
               reject(err);
             });
         })
@@ -153,6 +163,32 @@ class SingletonWxAuth {
           reject(err);
         });
     });
+  }
+  /**
+   * @description: 设置授权信息，因为在授权之后需要重定位，去除微信添加在url上的参数，重定位后页面重新加载，因此SingletonWxAuth重新执行
+   * 导致在该实例上的属性被初始化，因此将授权信息保存到session中
+   * @param {type}
+   * @return:
+   */
+  public setAuthToSession(authInfo: HttpResponseAuth) {
+    sessionStorage.setItem("SingletonWxAuth:auth", JSON.stringify(authInfo));
+  }
+  // 获取授权信息
+  public getAuthFromSession(): HttpResponseAuth {
+    return JSON.parse(sessionStorage.getItem("SingletonWxAuth:auth") || "null");
+  }
+  // 设置wxconfig
+  public setWxConfigToSession(wxConfig: object) {
+    sessionStorage.setItem(
+      "SingletonWxAuth:wxConfig",
+      JSON.stringify(wxConfig)
+    );
+  }
+  // 获取wxconfig
+  public getWxConfigFromSession(): WxConfig {
+    return JSON.parse(
+      sessionStorage.getItem("SingletonWxAuth:wxConfig") || "null"
+    );
   }
   // 跳转到微信授权页面
   public wxAuthRedirect() {
@@ -177,6 +213,7 @@ class SingletonWxAuth {
     const re = /(code=[A-Za-z0-9-=_]+&state=STATE[&]{0,1})/;
     let currentUrl = window.location.href.replace(re, "");
     currentUrl = currentUrl.replace("?#", "#");
+    console.log("replace url: ", currentUrl);
     window.location.replace(currentUrl);
   }
 
@@ -187,37 +224,33 @@ class SingletonWxAuth {
     authParams: AuthParams
   ): Promise<any> {
     return new Promise((resolve, reject) => {
+      if (this._wxConfig.appId) {
+        resolve();
+        return;
+      }
       this.httpGetWxSignature(httpSignature, authParams.signature)
         .then(() => {
-          const searchObj: WxLocation = LocationSearch(window.location.search);
+          const searchObj: WxLocation = locationSearch(window.location.search);
           if (searchObj["code"]) {
             httpAuth(authParams.auth)
-              .then((authRes: HttpResponse) => {
-                this._isAuth = true;
+              .then((authRes: HttpResponseAuth) => {
+                this.setAuthToSession(authRes);
                 this.wxAuthLocationReplace();
-                resolve({
-                  authStatus: "authSuccess",
-                  authInfo: {
-                    ...authRes
-                  }
-                });
               })
-              .catch(err => {
+              .catch((err) => {
                 reject(err);
               });
           } else {
+            // 从session中获取授权信息
+            this._isAuth = !!this.getAuthFromSession();
             if (this._isAuth) {
-              resolve({
-                authStatus: "authed"
-              });
+              resolve();
             } else {
-              resolve({
-                authStatus: "noAuth"
-              });
+              reject(new Error("no code，no auth"));
             }
           }
         })
-        .catch(err => {
+        .catch((err) => {
           reject(err);
         });
     });
