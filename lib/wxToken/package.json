@@ -1,8 +1,8 @@
 {
   "name": "wxtoken",
-  "version": "0.1.0",
+  "version": "0.2.7",
   "description": "weixin authorization",
-  "main": "dist/cmjs/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build:cmjs": "tsc -P tsconfig.json",
     "build:es6": "tsc -P tsconfig.json --module es6 --outDir dist/es6",
@@ -11,9 +11,9 @@
     "docs": "vuepress dev docs",
     "docs:build": "vuepress build docs"
   },
-  "module": "dist/es6/index.js",
+  "module": "dist/index.js",
   "keywords": [
-    "wxAuthorization"
+    "微信授权"
   ],
   "author": "Hexon",
   "license": "ISC",
