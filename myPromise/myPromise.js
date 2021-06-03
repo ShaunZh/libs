@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-03 15:44:00
+ * @LastEditTime: 2021-06-03 16:18:54
  */
 
 // 原生Promise实现
@@ -56,23 +56,39 @@ class MyPromise {
   }
 
   then = (onFulfilled, onRejected) => {
-    if (this.state === FULFILLED) {
-      onFulfilled(this.value)
-    } else if (this.state === REJECTED) {
-      onRejected(this.value)
-    } else if (this.state === PENDING) {
-      this.onFulfilledCallbacks.push(onFulfilled)
-      this.onRejectedCallbacks.push(onRejected)
+    const promiseThen = new MyPromise((resolve, reject) => {
+      if (this.state === FULFILLED) {
+        let x = onFulfilled(this.value)
+        // 判断返回值是否为promise，如果是，则执行then操作，如果不是在执行resolve
+        this.resolvePromise(x, resolve, reject)
+      } else if (this.state === REJECTED) {
+        onRejected(this.value)
+      } else if (this.state === PENDING) {
+        this.onFulfilledCallbacks.push(onFulfilled)
+        this.onRejectedCallbacks.push(onRejected)
+      }
+    })
+    // 要实现then的链式调用，因此，必须返回一个promise
+    return promiseThen
+  }
+
+  resolvePromise = (p, resolve, reject) => {
+    // 如果p是是promise
+    if (p instanceof MyPromise) {
+      p.then(resolve, reject)
+    } else {
+      resolve(p)
     }
+
   }
 }
 
 const testMyPromise = new MyPromise((resolve, reject) => {
   // 添加setTimeout后没有打印出resolve success，这是因为主线程立即执行，setTimeout是异步代码，属于macro task，
   // then会马上执行，此时state状态还是Pending，而在then函数中并未等待Pending状态，因此，没有打印信息
-  setTimeout(() => {
-    resolve('success')
-  }, 2000)
+  // setTimeout(() => {
+  resolve('success')
+  // }, 2000)
   // reject('err')
 })
 
@@ -82,17 +98,31 @@ const testMyPromise = new MyPromise((resolve, reject) => {
 //   console.log('reject ', err)
 // })
 
-testMyPromise.then(val => {
+// testMyPromise.then(val => {
+//   console.log(1)
+//   console.log('resolve ', val)
+// })
+
+// testMyPromise.then(val => {
+//   console.log(2)
+//   console.log('resolve ', val)
+// })
+
+// testMyPromise.then(val => {
+//   console.log(3)
+//   console.log('resolve ', val)
+// })
+
+function other() {
+  return new MyPromise((resolve, reject) => {
+    resolve('other')
+  })
+}
+testMyPromise.then(value => {
   console.log(1)
-  console.log('resolve ', val)
-})
-
-testMyPromise.then(val => {
+  console.log('resolve', value)
+  return other()
+}).then(value => {
   console.log(2)
-  console.log('resolve ', val)
-})
-
-testMyPromise.then(val => {
-  console.log(3)
-  console.log('resolve ', val)
+  console.log('resolve', value)
 })
