@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-03 15:21:00
+ * @LastEditTime: 2021-06-03 15:33:42
  */
 
 // 原生Promise实现
@@ -71,8 +71,23 @@ const testMyPromise = new MyPromise((resolve, reject) => {
   // reject('err')
 })
 
-testMyPromise.then((val) => {
+// testMyPromise.then((val) => {
+//   console.log('resolve ', val)
+// }, (err) => {
+//   console.log('reject ', err)
+// })
+
+testMyPromise.then(val => {
+  console.log(1)
   console.log('resolve ', val)
-}, (err) => {
-  console.log('reject ', err)
+})
+
+testMyPromise.then(val => {
+  console.log(2)
+  console.log('resolve ', val)
+})
+
+testMyPromise.then(val => {
+  console.log(3)
+  console.log('resolve ', val)
 })
