@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-03 15:13:43
+ * @LastEditTime: 2021-06-03 15:21:00
  */
 
 // 原生Promise实现
@@ -28,11 +28,16 @@ class MyPromise {
 
   state = PENDING
   value = null
+  // 缓存fulfilled 和 rejected的回调函数
+  onFulfilledCallback = null
+  onRejectedCallback = null
 
   resolve = (val) => {
     if (this.state === PENDING) {
       this.state = FULFILLED
       this.value = val
+      typeof this.onFulfilledCallback === 'function' &&
+        this.onFulfilledCallback(this.value)
     }
   }
 
@@ -40,6 +45,8 @@ class MyPromise {
     if (this.state === REJECTED) {
       this.state = REJECTED
       this.value = err
+      typeof this.onRejectedCallback === 'function' &&
+        this.onRejectedCallback(this.value)
     }
   }
 
@@ -48,6 +55,9 @@ class MyPromise {
       onFulfilled(this.value)
     } else if (this.state === REJECTED) {
       onRejected(this.value)
+    } else if (this.state === PENDING) {
+      this.onFulfilledCallback = onFulfilled
+      this.onRejectedCallback = onRejected
     }
   }
 }
