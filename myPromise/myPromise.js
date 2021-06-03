@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-03 15:34:44
+ * @LastEditTime: 2021-06-03 15:44:00
  */
 
 // 原生Promise实现
@@ -38,10 +38,10 @@ class MyPromise {
     if (this.state === PENDING) {
       this.state = FULFILLED
       this.value = val
-      this.onFulfilledCallbacks.forEach(callback => {
-        typeof callback === 'function' &&
-          callback(this.value)
-      })
+      // 执行回调函数后，需要将对应的函数移出数组
+      while (this.onFulfilledCallbacks.length) {
+        this.onFulfilledCallbacks.shift()(val)
+      }
     }
   }
 
@@ -49,10 +49,9 @@ class MyPromise {
     if (this.state === REJECTED) {
       this.state = REJECTED
       this.value = err
-      this.onRejectedCallbacks.forEach(callback => {
-        typeof callback === 'function' &&
-          callback(this.value)
-      })
+      while (this.onRejectedCallbacks.length) {
+        this.onRejectedCallbacks.shift()(err)
+      }
     }
   }
 
