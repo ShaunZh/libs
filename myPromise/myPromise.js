@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-03 15:33:42
+ * @LastEditTime: 2021-06-03 15:34:44
  */
 
 // 原生Promise实现
@@ -28,16 +28,20 @@ class MyPromise {
 
   state = PENDING
   value = null
+
   // 缓存fulfilled 和 rejected的回调函数
-  onFulfilledCallback = null
-  onRejectedCallback = null
+  onFulfilledCallbacks = []
+  onRejectedCallbacks = []
+
 
   resolve = (val) => {
     if (this.state === PENDING) {
       this.state = FULFILLED
       this.value = val
-      typeof this.onFulfilledCallback === 'function' &&
-        this.onFulfilledCallback(this.value)
+      this.onFulfilledCallbacks.forEach(callback => {
+        typeof callback === 'function' &&
+          callback(this.value)
+      })
     }
   }
 
@@ -45,8 +49,10 @@ class MyPromise {
     if (this.state === REJECTED) {
       this.state = REJECTED
       this.value = err
-      typeof this.onRejectedCallback === 'function' &&
-        this.onRejectedCallback(this.value)
+      this.onRejectedCallbacks.forEach(callback => {
+        typeof callback === 'function' &&
+          callback(this.value)
+      })
     }
   }
 
@@ -56,8 +62,8 @@ class MyPromise {
     } else if (this.state === REJECTED) {
       onRejected(this.value)
     } else if (this.state === PENDING) {
-      this.onFulfilledCallback = onFulfilled
-      this.onRejectedCallback = onRejected
+      this.onFulfilledCallbacks.push(onFulfilled)
+      this.onRejectedCallbacks.push(onRejected)
     }
   }
 }
