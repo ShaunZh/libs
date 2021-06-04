@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-03 16:18:54
+ * @LastEditTime: 2021-06-04 18:20:59
  */
 
 // 原生Promise实现
@@ -92,37 +92,14 @@ const testMyPromise = new MyPromise((resolve, reject) => {
   // reject('err')
 })
 
-// testMyPromise.then((val) => {
-//   console.log('resolve ', val)
-// }, (err) => {
-//   console.log('reject ', err)
-// })
-
-// testMyPromise.then(val => {
-//   console.log(1)
-//   console.log('resolve ', val)
-// })
-
-// testMyPromise.then(val => {
-//   console.log(2)
-//   console.log('resolve ', val)
-// })
-
-// testMyPromise.then(val => {
-//   console.log(3)
-//   console.log('resolve ', val)
-// })
-
 function other() {
   return new MyPromise((resolve, reject) => {
     resolve('other')
   })
 }
-testMyPromise.then(value => {
+
+const p1 = testMyPromise.then(value => {
   console.log(1)
   console.log('resolve', value)
-  return other()
-}).then(value => {
-  console.log(2)
-  console.log('resolve', value)
+  return p1
 })
