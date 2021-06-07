@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-04 18:20:59
+ * @LastEditTime: 2021-06-07 11:16:27
  */
 
 // 原生Promise实现
@@ -56,11 +56,11 @@ class MyPromise {
   }
 
   then = (onFulfilled, onRejected) => {
-    const promiseThen = new MyPromise((resolve, reject) => {
+    const promise2 = new MyPromise((resolve, reject) => {
       if (this.state === FULFILLED) {
         let x = onFulfilled(this.value)
         // 判断返回值是否为promise，如果是，则执行then操作，如果不是在执行resolve
-        this.resolvePromise(x, resolve, reject)
+        this.resolvePromise(promise2, x, resolve, reject)
       } else if (this.state === REJECTED) {
         onRejected(this.value)
       } else if (this.state === PENDING) {
@@ -69,10 +69,13 @@ class MyPromise {
       }
     })
     // 要实现then的链式调用，因此，必须返回一个promise
-    return promiseThen
+    return promise2
   }
 
-  resolvePromise = (p, resolve, reject) => {
+  resolvePromise = (promise2, p, resolve, reject) => {
+    if (promise2 === x) {
+      return reject(new TypeError('Chaining cycle detected for promise #<Promise>'))
+    }
     // 如果p是是promise
     if (p instanceof MyPromise) {
       p.then(resolve, reject)
