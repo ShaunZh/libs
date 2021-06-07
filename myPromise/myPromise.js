@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-07 16:54:50
+ * @LastEditTime: 2021-06-07 17:17:34
  */
 
 // 原生Promise实现
@@ -23,7 +23,11 @@ const REJECTED = 'REJECTED'
 
 class MyPromise {
   constructor(executor) {
-    executor(this.resolve, this.reject)
+    try {
+      executor(this.resolve, this.reject)
+    } catch (error) {
+      this.reject(error)
+    }
   }
 
   state = PENDING
@@ -93,19 +97,20 @@ const testMyPromise = new MyPromise((resolve, reject) => {
   // 添加setTimeout后没有打印出resolve success，这是因为主线程立即执行，setTimeout是异步代码，属于macro task，
   // then会马上执行，此时state状态还是Pending，而在then函数中并未等待Pending状态，因此，没有打印信息
   // setTimeout(() => {
-  resolve('success')
+  throw new Error('test error')
+  // resolve('success')
   // }, 2000)
   // reject('err')
 })
 
-const p1 = testMyPromise.then(value => {
-  console.log(1)
-  console.log('resolve', value)
-  return p1
-})
+// const p1 = testMyPromise.then(value => {
+//   console.log(1)
+//   console.log('resolve', value)
+//   return p1
+// })
 
 // 运行的时候会走reject
-p1.then(value => {
+testMyPromise.then(value => {
   console.log(2)
   console.log('resolve', value)
 }, reason => {
