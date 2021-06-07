@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-07 17:23:29
+ * @LastEditTime: 2021-06-07 17:31:32
  */
 
 // 原生Promise实现
@@ -72,10 +72,35 @@ class MyPromise {
           }
         })
       } else if (this.state === REJECTED) {
-        onRejected(this.value)
+        queueMicrotask(() => {
+          try {
+            let x = onRejected(this.value)
+            this.resolvePromise(promise2, x, resolve, reject)
+          } catch (error) {
+            reject(error)
+          }
+        })
       } else if (this.state === PENDING) {
-        this.onFulfilledCallbacks.push(onFulfilled)
-        this.onRejectedCallbacks.push(onRejected)
+        this.onFulfilledCallbacks.push(() => {
+          queueMicrotask(() => {
+            try {
+              let x = onFulfilled(this.value)
+              this.resolvePromise(promise2, x, resolve, reject)
+            } catch (error) {
+              reject(error)
+            }
+          })
+        })
+        this.onRejectedCallbacks.push(() => {
+          queueMicrotask(() => {
+            try {
+              let x = onRejected(this.value)
+              this.resolvePromise(promise2, x, resolve, reject)
+            } catch (error) {
+              reject(error)
+            }
+          })
+        })
       }
     })
     // 要实现then的链式调用，因此，必须返回一个promise
@@ -126,5 +151,12 @@ testMyPromise.then(value => {
   console.log('resolve ', value)
 }, error => {
   console.log(4)
+  console.log(error.message)
+  throw new Error('catch error')
+}).then(value => {
+  console.log(5)
+  console.log(value)
+}, error => {
+  console.log(6)
   console.log(error.message)
 })
