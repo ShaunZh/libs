@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-07 17:31:32
+ * @LastEditTime: 2021-06-07 17:58:50
  */
 
 // 原生Promise实现
@@ -60,6 +60,10 @@ class MyPromise {
   }
 
   then = (onFulfilled, onRejected) => {
+
+    onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : value => value
+    onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason }
+
     const promise2 = new MyPromise((resolve, reject) => {
       if (this.state === FULFILLED) {
         queueMicrotask(() => {
@@ -127,9 +131,9 @@ const testMyPromise = new MyPromise((resolve, reject) => {
   // then会马上执行，此时state状态还是Pending，而在then函数中并未等待Pending状态，因此，没有打印信息
   // setTimeout(() => {
   // throw new Error('test error')
-  resolve('success')
+  // resolve('success')
   // }, 2000)
-  // reject('err')
+  reject('err')
 })
 
 // const p1 = testMyPromise.then(value => {
@@ -137,6 +141,10 @@ const testMyPromise = new MyPromise((resolve, reject) => {
 //   console.log('resolve', value)
 //   return p1
 // })
+
+// 测试不传then参数
+testMyPromise.then().then().then(value => console.log(value))
+
 
 // 运行的时候会走reject
 testMyPromise.then(value => {
@@ -160,3 +168,5 @@ testMyPromise.then(value => {
   console.log(6)
   console.log(error.message)
 })
+
+
