@@ -3,7 +3,7 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-07 11:16:27
+ * @LastEditTime: 2021-06-07 16:54:50
  */
 
 // 原生Promise实现
@@ -46,7 +46,7 @@ class MyPromise {
   }
 
   reject = (err) => {
-    if (this.state === REJECTED) {
+    if (this.state === PENDING) {
       this.state = REJECTED
       this.value = err
       while (this.onRejectedCallbacks.length) {
@@ -58,9 +58,11 @@ class MyPromise {
   then = (onFulfilled, onRejected) => {
     const promise2 = new MyPromise((resolve, reject) => {
       if (this.state === FULFILLED) {
-        let x = onFulfilled(this.value)
-        // 判断返回值是否为promise，如果是，则执行then操作，如果不是在执行resolve
-        this.resolvePromise(promise2, x, resolve, reject)
+        queueMicrotask(() => {
+          let x = onFulfilled(this.value)
+          // 判断返回值是否为promise，如果是，则执行then操作，如果不是在执行resolve
+          this.resolvePromise(promise2, x, resolve, reject)
+        })
       } else if (this.state === REJECTED) {
         onRejected(this.value)
       } else if (this.state === PENDING) {
@@ -73,7 +75,8 @@ class MyPromise {
   }
 
   resolvePromise = (promise2, p, resolve, reject) => {
-    if (promise2 === x) {
+    if (promise2 === p) {
+      console.log('等于')
       return reject(new TypeError('Chaining cycle detected for promise #<Promise>'))
     }
     // 如果p是是promise
@@ -95,14 +98,18 @@ const testMyPromise = new MyPromise((resolve, reject) => {
   // reject('err')
 })
 
-function other() {
-  return new MyPromise((resolve, reject) => {
-    resolve('other')
-  })
-}
-
 const p1 = testMyPromise.then(value => {
   console.log(1)
   console.log('resolve', value)
   return p1
+})
+
+// 运行的时候会走reject
+p1.then(value => {
+  console.log(2)
+  console.log('resolve', value)
+}, reason => {
+  console.log('tttt')
+  console.log(3)
+  console.log(reason.message)
 })
