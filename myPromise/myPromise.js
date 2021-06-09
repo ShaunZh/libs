@@ -3,23 +3,12 @@
  * @Author: Hexon
  * @Date: 2021-06-03 13:56:22
  * @LastEditors: Hexon
- * @LastEditTime: 2021-06-08 09:59:54
+ * @LastEditTime: 2021-06-09 14:31:21
  */
 
-// 原生Promise实现
-// const promise = new Promise((resolve, reject) => {
-//   resolve('success')
-//   reject('err')
-// })
-// promise.then(value => {
-//   console.log('resolve', value)
-// }, reason => {
-//   console.log('reject', reason)
-// })
-
-const PENDING = 'pending'
-const FULFILLED = 'resolve'
-const REJECTED = 'REJECTED'
+const PENDING = 'pending';
+const FULFILLED = 'resolve';
+const REJECTED = 'REJECTED';
 
 class MyPromise {
   constructor(executor) {
@@ -32,13 +21,11 @@ class MyPromise {
 
   state = PENDING
   value = null
+  reason = null
 
   // 缓存fulfilled 和 rejected的回调函数
   onFulfilledCallbacks = []
   onRejectedCallbacks = []
-
-
-
 
   resolve = (val) => {
     if (this.state === PENDING) {
@@ -54,7 +41,7 @@ class MyPromise {
   reject = (err) => {
     if (this.state === PENDING) {
       this.state = REJECTED
-      this.value = err
+      this.reason = err
       while (this.onRejectedCallbacks.length) {
         this.onRejectedCallbacks.shift()(err)
       }
@@ -72,7 +59,7 @@ class MyPromise {
           try {
             let x = onFulfilled(this.value)
             // 判断返回值是否为promise，如果是，则执行then操作，如果不是在执行resolve
-            this.resolvePromise(promise2, x, resolve, reject)
+            resolvePromise(promise2, x, resolve, reject)
           } catch (error) {
             reject(error)
           }
@@ -81,8 +68,8 @@ class MyPromise {
       const rejectedMicrotask = () => {
         queueMicrotask(() => {
           try {
-            let x = onRejected(this.value)
-            this.resolvePromise(promise2, x, resolve, reject)
+            let x = onRejected(this.reason)
+            resolvePromise(promise2, x, resolve, reject)
           } catch (error) {
             reject(error)
           }
@@ -100,21 +87,6 @@ class MyPromise {
     // 要实现then的链式调用，因此，必须返回一个promise
     return promise2
   }
-
-  resolvePromise = (promise2, p, resolve, reject) => {
-    if (promise2 === p) {
-      return reject(new TypeError('Chaining cycle detected for promise #<Promise>'))
-    }
-    if (p instanceof MyPromise) {
-      // 执行 x，调用 then 方法，目的是将其状态变为 fulfilled 或者 rejected
-      // x.then(value => resolve(value), reason => reject(reason))
-      // 简化之后
-      p.then(resolve, reject)
-    } else {
-      resolve(p)
-    }
-  }
-
   static resolve(parameter) {
     if (parameter instanceof MyPromise) {
       return parameter
@@ -132,57 +104,58 @@ class MyPromise {
   }
 }
 
-// const testMyPromise = new MyPromise((resolve, reject) => {
-//   // 添加setTimeout后没有打印出resolve success，这是因为主线程立即执行，setTimeout是异步代码，属于macro task，
-//   // then会马上执行，此时state状态还是Pending，而在then函数中并未等待Pending状态，因此，没有打印信息
-//   // setTimeout(() => {
-//   // throw new Error('test error')
-//   // resolve('success')
-//   // }, 2000)
-//   reject('err')
-// })
+function resolvePromise(promise, x, resolve, reject) {
+  if (promise === x) {
+    return reject(new TypeError('Chaining cycle detected for promise #<Promise>'))
+  }
 
-// // const p1 = testMyPromise.then(value => {
-// //   console.log(1)
-// //   console.log('resolve', value)
-// //   return p1
-// // })
+  if (typeof x === 'object' || typeof x === 'function') {
+    if (x === null) {
+      return resolve(x);
+    }
 
-// // 测试不传then参数
-// testMyPromise.then().then().then(value => console.log(value))
+    let then;
+    try {
+      then = x.then
+    } catch (err) {
+      return reject(err)
+    }
 
+    if (typeof then === 'function') {
+      let called = false;
+      try {
+        then.call(
+          x,
+          y => {
+            if (called) return;
+            called = true;
+            resolvePromise(promise, y, resolve, reject);
+          },
+          r => {
+            if (called) return;
+            called = true;
+            reject(r);
+          }
+        )
+      } catch (err) {
+        if (called) return;
+        reject(err)
+      }
+    } else {
+      resolve(x)
+    }
+  } else {
+    resolve(x);
+  }
+}
 
-// MyPromise.resolve().then(() => {
-//   console.log(0);
-//   return MyPromise.resolve(4);
-// }).then((res) => {
-//   console.log(res)
-// })
+MyPromise.deferred = function () {
+  var result = {}
+  result.promise = new MyPromise(function (resolve, reject) {
+    result.resolve = resolve;
+    result.reject = reject;
+  })
+  return result
+}
 
-// MyPromise.reject('test error').then(v => console.log('v', v), e => console.error(e))
-
-
-// // 运行的时候会走reject
-// testMyPromise.then(value => {
-//   console.log(1)
-//   console.log('resolve ', value)
-//   throw new Error('then error')
-// }, reason => {
-//   console.log(2)
-//   console.log(reason.message)
-// }).then(value => {
-//   console.log(3)
-//   console.log('resolve ', value)
-// }, error => {
-//   console.log(4)
-//   console.log(error.message)
-//   throw new Error('catch error')
-// }).then(value => {
-//   console.log(5)
-//   console.log(value)
-// }, error => {
-//   console.log(6)
-//   console.log(error.message)
-// })
-
-
+module.exports = MyPromise
